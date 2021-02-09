@@ -23,9 +23,12 @@ static ros::Publisher pc_pub;
 
 static sensor_msgs::PointCloud2Ptr PCfused;
 
-static pcl::PCLPointCloud2 cloud_in_pcl;
-static pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in (new pcl::PointCloud<pcl::PointXYZ>);
-static pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out (new pcl::PointCloud<pcl::PointXYZ>);
+static pcl::PCLPointCloud2 cloud_in_pcl;    //source
+static pcl::PCLPointCloud2 cloud_out_pcl;   //target
+static pcl::PCLPointCloud2 cloud_fused_pcl; //aligned
+static pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in (new pcl::PointCloud<pcl::PointXYZ>);       //source
+static pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out (new pcl::PointCloud<pcl::PointXYZ>);      //target
+static pcl::PointCloud<pcl::PointXYZ> cloud_fused;                                              //aligned
 static pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
 
 static const int frequency = 2;
@@ -51,8 +54,24 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &PCmsg)
     }
     else
     {
+        //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
         pcl_conversions::toPCL(*PCmsg,cloud_in_pcl);
+        pcl_conversions::toPCL(*PCfused,cloud_out_pcl);
         pcl::fromPCLPointCloud2(cloud_in_pcl,*cloud_in);
+        pcl::fromPCLPointCloud2(cloud_out_pcl,*cloud_out);
+
+        //perform ICP
+        icp.setInputSource(cloud_in);
+        icp.setInputTarget(cloud_out);
+        icp.align(cloud_fused);
+
+        //convert back
+        pcl::toPCLPointCloud2(cloud_fused, cloud_fused_pcl);
+        pcl_conversions::fromPCL(cloud_fused_pcl, *PCfused);
+
+        //publish pointcloud
+        ROS_ERROR_STREAM("Publishing");
+        pc_pub.publish(PCfused);
     }
 }
 
@@ -68,6 +87,9 @@ int main(int argc, char** argv)
 
     //looping frequency
     ros::Rate r(frequency);
+
+    //icp settings
+    icp.setMaximumIterations(50);
 
     while(ros::ok())
     {
