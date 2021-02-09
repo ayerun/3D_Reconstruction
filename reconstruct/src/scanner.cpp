@@ -23,9 +23,9 @@
 static ros::Subscriber pc_sub;
 static ros::Publisher pc_pub;
 
-static sensor_msgs::PointCloud2Ptr PCold;
-static sensor_msgs::PointCloud2Ptr PCtrans;
-static sensor_msgs::PointCloud2Ptr PCfused;
+static sensor_msgs::PointCloud2 PCold;
+static sensor_msgs::PointCloud2 PCtrans;
+static sensor_msgs::PointCloud2 PCfused;
 
 static pcl::PCLPointCloud2 cloud_in_pcl;    //source
 static pcl::PCLPointCloud2 cloud_out_pcl;   //target
@@ -35,7 +35,7 @@ static pcl::PointCloud<pcl::PointXYZ> cloud_fused;                              
 static pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
 static Eigen::Matrix4f transformation;
 
-static const int frequency = 5;
+static const int frequency = 1;
 static bool first = true;
 
 /*
@@ -44,7 +44,7 @@ transform PointCloud
 Concatenate PointCloud
 publish concatenated pointcloud
 */
-void pcCallback(const sensor_msgs::PointCloud2Ptr &PCnew)
+void pcCallback(const sensor_msgs::PointCloud2 PCnew)
 {
     if(first)
     {
@@ -61,8 +61,8 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &PCnew)
     else
     {
         //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
-        pcl_conversions::toPCL(*PCnew,cloud_in_pcl);
-        pcl_conversions::toPCL(*PCold,cloud_out_pcl);
+        pcl_conversions::toPCL(PCnew,cloud_in_pcl);
+        pcl_conversions::toPCL(PCold,cloud_out_pcl);
         pcl::fromPCLPointCloud2(cloud_in_pcl,*cloud_in);
         pcl::fromPCLPointCloud2(cloud_out_pcl,*cloud_out);
 
@@ -70,17 +70,13 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &PCnew)
         icp.setInputSource(cloud_in);
         icp.setInputTarget(cloud_out);
         icp.align(cloud_fused);
-        transformation = icp.getFinalTransformation();
-        // std::cout << transformation << std::endl;
+        transformation *= icp.getFinalTransformation();
 
         //Transform Point Cloud
-        pcl_ros::transformPointCloud(transformation, *PCnew, *PCtrans);
-
-        // ROS_ERROR_STREAM(PCtrans->header);
-        // ROS_ERROR_STREAM(PCfused->header);
+        pcl_ros::transformPointCloud(transformation, PCnew, PCtrans);
 
         //Fuse point clouds
-        pcl::concatenatePointCloud(*PCfused,*PCtrans,*PCfused);
+        pcl::concatenatePointCloud(PCfused,PCtrans,PCfused);
 
 
         //publish pointcloud
