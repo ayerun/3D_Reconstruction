@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find camera_input)/launch/viewer.launch" />
+    <node name="scanner" pkg="reconstruct" type="reconstruct_scanner" />
+</launch>
