@@ -1,4 +1,22 @@
 <launch>
+
+    <!-- launch realsense -->
     <include file="$(find camera_input)/launch/viewer.launch" />
-    <node name="scanner" pkg="reconstruct" type="reconstruct_scanner" />
+
+    <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+    <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
+    <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" output="screen">
+        <remap from="~input" to="/camera/depth/color/points" />
+        <rosparam>
+            filter_field_name: z
+            filter_limit_min: 0.01
+            filter_limit_max: 1.5
+            filter_limit_negative: False
+            leaf_size: 0.01
+        </rosparam>
+    </node>
+
+    <!-- iterative closest point -->
+    <node name="scanner" pkg="reconstruct" type="reconstruct_scanner" output="screen"/>
+
 </launch>
