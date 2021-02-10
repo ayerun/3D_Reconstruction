@@ -33,7 +33,10 @@ static pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in (new pcl::PointCloud<pcl::Po
 static pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out (new pcl::PointCloud<pcl::PointXYZ>);      //target
 static pcl::PointCloud<pcl::PointXYZ> cloud_fused;                                              //fused
 static pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-static Eigen::Matrix4f transformation;
+static Eigen::Matrix4f Tba;
+static Eigen::Matrix4f Tcb;
+static Eigen::Matrix4f transform;
+static Eigen::Matrix4f Tca;
 
 static const int frequency = 1;
 static bool first = true;
@@ -70,20 +73,26 @@ void pcCallback(const sensor_msgs::PointCloud2 PCnew)
         icp.setInputSource(cloud_in);
         icp.setInputTarget(cloud_out);
         icp.align(cloud_fused);
-        transformation *= icp.getFinalTransformation();
+        Tcb = icp.getFinalTransformation();     //Tec
+
+        Tca = Tcb*Tba;                          //Tea = Tec*Tca
+        // transform *= Tca;                       //Tca*Teb
+
 
         //Transform Point Cloud
-        pcl_ros::transformPointCloud(transformation, PCnew, PCtrans);
+        pcl_ros::transformPointCloud(Tca, PCnew, PCtrans);
+        ROS_WARN_STREAM(icp.getFitnessScore());
 
         //Fuse point clouds
         pcl::concatenatePointCloud(PCfused,PCtrans,PCfused);
 
 
         //publish pointcloud
-        ROS_WARN_STREAM("Publishing");
+        // ROS_WARN_STREAM("Publishing");
         pc_pub.publish(PCfused);
 
         PCold = PCnew;
+        Tba = Tca;
     }
 }
 
@@ -102,8 +111,14 @@ int main(int argc, char** argv)
 
     //icp settings
     icp.setMaximumIterations(50);
+    icp.setMaxCorrespondenceDistance(0.05);
+    icp.setTransformationEpsilon(1e-8);
+    icp.setEuclideanFitnessEpsilon(1);
 
-    transformation = Eigen::Matrix4f::Identity();
+    Tba = Eigen::Matrix4f::Identity();
+    Tcb = Eigen::Matrix4f::Identity();
+    transform = Eigen::Matrix4f::Identity();
+    Tca = Eigen::Matrix4f::Identity();
 
     while(ros::ok())
     {
