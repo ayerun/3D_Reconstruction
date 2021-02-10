@@ -73,10 +73,9 @@ void pcCallback(const sensor_msgs::PointCloud2 PCnew)
         icp.setInputSource(cloud_in);
         icp.setInputTarget(cloud_out);
         icp.align(cloud_fused);
-        Tcb = icp.getFinalTransformation();     //Tec
+        Tcb = icp.getFinalTransformation();
 
-        Tca = Tcb*Tba;                          //Tea = Tec*Tca
-        // transform *= Tca;                       //Tca*Teb
+        Tca = Tcb*Tba;
 
 
         //Transform Point Cloud
@@ -88,7 +87,6 @@ void pcCallback(const sensor_msgs::PointCloud2 PCnew)
 
 
         //publish pointcloud
-        // ROS_WARN_STREAM("Publishing");
         pc_pub.publish(PCfused);
 
         PCold = PCnew;
