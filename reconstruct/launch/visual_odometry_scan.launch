@@ -16,6 +16,8 @@
         <arg name="rviz" value="false"/>
     </include>
 
+    <node name="triangulate" pkg="reconstruct" type="reconstruct_triangulate" />
+
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find reconstruct)/config/scan_map.rviz" />
 
 </launch>
