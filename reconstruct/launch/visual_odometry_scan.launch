@@ -1,0 +1,21 @@
+<launch>  
+
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="align_depth" value="true"/>
+        <arg name="linear_accel_cov" value="1.0"/>
+        <arg name="unite_imu_method" value="linear_interpolation"/>
+    </include>
+    
+    <include file="$(find rtabmap_ros)/launch/rtabmap.launch">
+        <arg name="args" value="--delete_db_on_start"/>
+        <arg name="rgb_topic" value="/camera/color/image_raw"/>
+        <arg name="depth_topic" value="/camera/aligned_depth_to_color/image_raw"/>
+        <arg name="camera_info_topic" value="/camera/color/camera_info"/>
+        <arg name="depth_camera_info_topic" value="/camera/depth/camera_info"/>
+        <arg name="rtabmapviz" value="false"/>
+        <arg name="rviz" value="false"/>
+    </include>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find reconstruct)/config/scan_map.rviz" />
+
+</launch>
