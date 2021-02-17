@@ -16,7 +16,9 @@
         <arg name="rviz" value="false"/>
     </include>
 
-    <node name="triangulate" pkg="reconstruct" type="reconstruct_triangulate" />
+    <node name="triangulate" pkg="reconstruct" type="reconstruct_triangulate" >
+        <remap from="input" to="/rtabmap/cloud_map" />
+    </node>
 
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find reconstruct)/config/scan_map.rviz" />
 

@@ -4,6 +4,10 @@
 static ros::Subscriber pc_sub;
 static sensor_msgs::PointCloud2Ptr scan;
 
+//create meshing service
+//use GreedyProjectionTriangulation to generate PolygonMesh
+//savePolygonFileSTL()
+
 void pcCallback(const sensor_msgs::PointCloud2Ptr &PCmsg)
 {
     scan = PCmsg;
