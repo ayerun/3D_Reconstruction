@@ -3,6 +3,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/surface/gp3.h>
+#include <pcl/surface/marching_cubes_hoppe.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/surface/mls.h>
@@ -16,7 +17,8 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &PCmsg)
     scan = PCmsg;
 }
 
-bool meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mesh::Response &res)
+//greedy projection triangulation
+bool gp_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mesh::Response &res)
 {
     //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
     pcl::PCLPointCloud2 cloud_transition;
@@ -66,6 +68,48 @@ bool meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_me
     return true;
 }
 
+//marching cubes
+bool mc_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mesh::Response &res)
+{
+    //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
+    pcl::PCLPointCloud2 cloud_transition;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl_conversions::toPCL(*scan, cloud_transition);
+    pcl::fromPCLPointCloud2(cloud_transition, *cloud);
+
+    //Create search tree
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud(cloud);
+
+    //Moving Least Squares Normal Estimation
+    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
+    pcl::MovingLeastSquares<pcl::PointXYZ,pcl::PointNormal> mls;
+    mls.setComputeNormals(true);
+    mls.setInputCloud(cloud);
+    mls.setPolynomialOrder(2);
+    mls.setSearchMethod(tree);
+    mls.setSearchRadius(0.05);
+    mls.process(*cloud_with_normals);
+    
+    //Create search tree
+    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
+    tree2->setInputCloud(cloud_with_normals);
+
+    //Initialize objects
+    pcl::MarchingCubesHoppe<pcl::PointNormal> mc;
+    pcl::PolygonMesh triangles;
+
+    //Create mesh
+    mc.setInputCloud(cloud_with_normals);
+    mc.setSearchMethod(tree2);
+    mc.reconstruct(triangles);
+
+    // export as stl
+    pcl::io::savePolygonFileSTL(req.filename,triangles,true);
+
+    return true;
+}
+
 bool plyCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mesh::Response &res)
 {
     //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
@@ -101,7 +145,8 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
 
     const ros::Subscriber pc_sub = nh.subscribe("/rtabmap/cloud_map", 10, pcCallback);
-    const ros::ServiceServer mesh_service = nh.advertiseService("create_mesh",meshCallback);
+    const ros::ServiceServer gp_mesh_service = nh.advertiseService("create_gp_mesh",gp_meshCallback);
+    const ros::ServiceServer mc_mesh_service = nh.advertiseService("create_mc_mesh",mc_meshCallback);
     const ros::ServiceServer ply_service = nh.advertiseService("create_ply",plyCallback);
 
     ros::Rate r(frequency);
