@@ -5,7 +5,7 @@
 #include <pcl/surface/gp3.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/io/ply_io.h>
-#include <pcl/surface/processing.h>
+#include <pcl/surface/mls.h>
 #include <reconstruct/create_mesh.h>
 
 static sensor_msgs::PointCloud2Ptr scan;
@@ -24,21 +24,21 @@ bool meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_me
     pcl_conversions::toPCL(*scan, cloud_transition);
     pcl::fromPCLPointCloud2(cloud_transition, *cloud);
 
-    //Normal Estimation
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
-    pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
+    //Create search tree
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
     tree->setInputCloud(cloud);
-    n.setInputCloud(cloud);
-    n.setSearchMethod(tree);
-    n.setKSearch(20);
-    n.compute(*normals);
 
-    //Concatenate XYZ with normal fields
+    //Moving Least Squares Normal Estimation
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
+    pcl::MovingLeastSquares<pcl::PointXYZ,pcl::PointNormal> mls;
+    mls.setComputeNormals(true);
+    mls.setInputCloud(cloud);
+    mls.setPolynomialOrder(2);
+    mls.setSearchMethod(tree);
+    mls.setSearchRadius(0.05);
+    mls.process(*cloud_with_normals);
     
-    // Create search tree
+    //Create search tree
     pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
     tree2->setInputCloud(cloud_with_normals);
 
@@ -47,8 +47,8 @@ bool meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_me
     pcl::PolygonMesh triangles;
 
     //Set triangulation parameters
-    gp3.setSearchRadius(0.05); //maximum distance between connected points (max edge length)
-    gp3.setMu(2);
+    gp3.setSearchRadius(0.1); //maximum distance between connected points (max edge length)
+    gp3.setMu(2.5);
     gp3.setMaximumNearestNeighbors(100);
     gp3.setMaximumSurfaceAngle(M_PI/4);
     gp3.setMaximumAngle(2*M_PI/3);
@@ -74,19 +74,19 @@ bool plyCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mes
     pcl_conversions::toPCL(*scan, cloud_transition);
     pcl::fromPCLPointCloud2(cloud_transition, *cloud);
 
-    //Normal Estimation
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
-    pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
+    //Create search tree
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
     tree->setInputCloud(cloud);
-    n.setInputCloud(cloud);
-    n.setSearchMethod(tree);
-    n.setKSearch(20);
-    n.compute(*normals);
 
-    //Concatenate XYZ with normal fields
+    //Moving Least Squares Normal Estimation
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
+    pcl::MovingLeastSquares<pcl::PointXYZ,pcl::PointNormal> mls;
+    mls.setComputeNormals(true);
+    mls.setInputCloud(cloud);
+    mls.setPolynomialOrder(2);
+    mls.setSearchMethod(tree);
+    mls.setSearchRadius(0.05);
+    mls.process(*cloud_with_normals);
 
     //save normal cloud
     pcl::PLYWriter writer;
@@ -101,8 +101,8 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
 
     const ros::Subscriber pc_sub = nh.subscribe("/rtabmap/cloud_map", 10, pcCallback);
-    const ros::ServiceServer meshservice = nh.advertiseService("create_mesh",meshCallback);
-    const ros::ServiceServer plyservice = nh.advertiseService("create_ply",plyCallback);
+    const ros::ServiceServer mesh_service = nh.advertiseService("create_mesh",meshCallback);
+    const ros::ServiceServer ply_service = nh.advertiseService("create_ply",plyCallback);
 
     ros::Rate r(frequency);
     while(ros::ok())

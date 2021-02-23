@@ -4,7 +4,7 @@
         <arg name="align_depth" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>
         <arg name="unite_imu_method" value="linear_interpolation"/>
-        <arg name="clip_distance" value="2" />
+        <arg name="clip_distance" value="1.5" />
     </include>
     
     <include file="$(find rtabmap_ros)/launch/rtabmap.launch">
@@ -15,7 +15,7 @@
         <arg name="depth_camera_info_topic" value="/camera/depth/camera_info"/>
         <arg name="rtabmapviz" value="false"/>
         <arg name="rviz" value="false"/>
-        <arg name="cell_size" value="0.03" />
+        <arg name="cell_size" value="0.02" />
     </include>
 
     <node name="triangulate" pkg="reconstruct" type="reconstruct_triangulate" />
