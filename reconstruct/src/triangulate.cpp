@@ -95,6 +95,13 @@ bool plyCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mes
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
     pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
 
+    //Processing
+    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_proc (new pcl::PointCloud<pcl::PointNormal>);
+    pcl::CloudSurfaceProcessing<pcl::PointNormal,pcl::PointNormal>::Ptr proc;
+    // proc->setInputCloud(cloud_with_normals);
+    proc->process(*cloud_with_normals);
+    // cloud_with_normals = cloud_proc; //used processed cloud from here
+
     //save normal cloud
     pcl::PLYWriter writer;
     writer.write(req.filename,*cloud_with_normals);
