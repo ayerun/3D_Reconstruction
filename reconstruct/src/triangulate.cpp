@@ -24,13 +24,6 @@ bool meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_me
     pcl_conversions::toPCL(*scan, cloud_transition);
     pcl::fromPCLPointCloud2(cloud_transition, *cloud);
 
-    //Processing
-    // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_proc (new pcl::PointCloud<pcl::PointXYZ>);
-    // pcl::CloudSurfaceProcessing<pcl::PointXYZ,pcl::PointXYZ>::Ptr proc;
-    // proc->setInputCloud(cloud);
-    // proc->process(*cloud_proc);
-    // cloud = cloud_proc; //used processed cloud from here
-
     //Normal Estimation
     pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
     pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
@@ -94,13 +87,6 @@ bool plyCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mes
     //Concatenate XYZ with normal fields
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
     pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
-
-    //Processing
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_proc (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::CloudSurfaceProcessing<pcl::PointNormal,pcl::PointNormal>::Ptr proc;
-    // proc->setInputCloud(cloud_with_normals);
-    proc->process(*cloud_with_normals);
-    // cloud_with_normals = cloud_proc; //used processed cloud from here
 
     //save normal cloud
     pcl::PLYWriter writer;
