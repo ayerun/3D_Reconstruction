@@ -102,6 +102,8 @@ bool mc_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create
     //Create mesh
     mc.setInputCloud(cloud_with_normals);
     mc.setSearchMethod(tree2);
+    mc.setIsoLevel(0.5);
+    mc.setGridResolution(32,32,32);
     mc.reconstruct(triangles);
 
     // export as stl
