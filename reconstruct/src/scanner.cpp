@@ -4,9 +4,9 @@
 /// PARAMETERS:
 ///     
 /// PUBLISHES:
-///     
+///     /fused (sensor_msgs/PointCloud2): concatenated point cloud
 /// SUBSCRIBES:
-///     /camera/depth/color/points (sensor_msgs/PointCloud2): camera pointcloud data
+///     /camera/depth/color/points (sensor_msgs/PointCloud2): camera point cloud data
 /// BROADCASTS:
 ///     
 /// SERVICES:
@@ -41,12 +41,9 @@ static Eigen::Matrix4f Tca;
 static const int frequency = 1;
 static bool first = true;
 
-/*
-Perform ICP to find transformation
-transform PointCloud
-Concatenate PointCloud
-publish concatenated pointcloud
-*/
+
+/// \brief subscriber callback that performs ICP, transforms point cloud, fuses point clouds, publishes fused point cloud
+/// \param PCnew - incoming point cloud
 void pcCallback(const sensor_msgs::PointCloud2 PCnew)
 {
     if(first)
@@ -95,6 +92,10 @@ void pcCallback(const sensor_msgs::PointCloud2 PCnew)
     }
 }
 
+/// \brief initializes node, subscriber, publisher, parameters, and objects
+/// \param argc - initialization arguement
+/// \param argv - initialization arguement
+/// \return 0 at end of function
 int main(int argc, char** argv)
 {
     //initialize node
@@ -126,4 +127,5 @@ int main(int argc, char** argv)
         ros::spinOnce();
         r.sleep();
     }
+    return 0;
 }

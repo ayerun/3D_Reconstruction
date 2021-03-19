@@ -1,3 +1,19 @@
+/// \file
+/// \brief Provides services to create .stl meshes or a .ply point cloud
+///
+/// PARAMETERS:
+///     
+/// PUBLISHES:
+///     
+/// SUBSCRIBES:
+///     /rtabmap/cloud_map (sensor_msgs/PointCloud2): camera point cloud data
+/// BROADCASTS:
+///     
+/// SERVICES:
+///     create_gp_mesh: uses greedy projection triangulation to create .stl
+///     create_mc_mesh: uses marching cubes to create .stl
+///     create_ply: saves point cloud with normals as .ply
+
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -9,15 +25,22 @@
 #include <pcl/surface/mls.h>
 #include <reconstruct/create_mesh.h>
 
+//global variables
 static sensor_msgs::PointCloud2Ptr scan;
 static const int frequency = 200;
 
+/// \brief subscriber callback stores address of latest cloud map
+/// \param PCmsg - incoming cloud map
 void pcCallback(const sensor_msgs::PointCloud2Ptr &PCmsg)
 {
     scan = PCmsg;
 }
 
-//greedy projection triangulation
+/// \brief create .stl using greedy projection triangulation
+/// \param req - service request
+///              filename: location to save .stl
+/// \param resp - service response (empty)
+/// \return true when callback complete
 bool gp_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mesh::Response &res)
 {
     //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
@@ -68,7 +91,11 @@ bool gp_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create
     return true;
 }
 
-//marching cubes
+/// \brief create .stl using marching cubes
+/// \param req - service request
+///              filename: location to save .stl
+/// \param resp - service response (empty)
+/// \return true when callback complete
 bool mc_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mesh::Response &res)
 {
     //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
@@ -112,6 +139,11 @@ bool mc_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create
     return true;
 }
 
+/// \brief calculate normals and create .ply
+/// \param req - service request
+///              filename: location to save .ply
+/// \param resp - service response (empty)
+/// \return true when callback complete
 bool plyCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mesh::Response &res)
 {
     //convert to PCLPointCloud2 then to PointCloud<pcl::PointXYZ>
@@ -141,16 +173,22 @@ bool plyCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mes
     return true;
 }
 
+/// \brief initializes node, subscriber, publisher, parameters, and objects
+/// \param argc - initialization arguement
+/// \param argv - initialization arguement
+/// \return 0 at end of function
 int main(int argc, char** argv)
 {
     ros::init(argc,argv,"triangulate");
     ros::NodeHandle nh;
 
+    //initialize subscriber and services
     const ros::Subscriber pc_sub = nh.subscribe("/rtabmap/cloud_map", 10, pcCallback);
     const ros::ServiceServer gp_mesh_service = nh.advertiseService("create_gp_mesh",gp_meshCallback);
     const ros::ServiceServer mc_mesh_service = nh.advertiseService("create_mc_mesh",mc_meshCallback);
     const ros::ServiceServer ply_service = nh.advertiseService("create_ply",plyCallback);
 
+    //spin
     ros::Rate r(frequency);
     while(ros::ok())
     {
