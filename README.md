@@ -32,7 +32,7 @@ rosservice call /create_ply "filename: '/home/arun/normals.ply'"
     * creates point cloud map using ICP
     * functional but not recommended for meshing
 * rtabmap.launch
-    * rtabmap's defaul visual slam launch file
+    * rtabmap's default visual slam launch file
     * added an arguement, cell_size, to set point cloud map voxel size
 
 #### Nodes
