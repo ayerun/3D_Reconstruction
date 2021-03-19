@@ -1,13 +1,18 @@
-<launch>  
+<launch> 
+    <arg name="use_rviz" default="true" doc="launch rviz"/>
+    <arg name="voxel_size" default="0.02" doc="point cloud map voxel size [m]"/>
+    <arg name="clip" default="2" doc="clipping distance for realsense [m]" />
 
+    <!-- launch realsense -->
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="align_depth" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>
         <arg name="unite_imu_method" value="linear_interpolation"/>
-        <arg name="clip_distance" value="1.5" />
+        <arg name="clip_distance" value="$(arg clip)" />
     </include>
     
-    <include file="$(find rtabmap_ros)/launch/rtabmap.launch">
+    <!-- visual slam -->
+    <include file="$(find reconstruct)/launch/rtabmap.launch">
         <arg name="args" value="--delete_db_on_start"/>
         <arg name="rgb_topic" value="/camera/color/image_raw"/>
         <arg name="depth_topic" value="/camera/aligned_depth_to_color/image_raw"/>
@@ -15,11 +20,13 @@
         <arg name="depth_camera_info_topic" value="/camera/depth/camera_info"/>
         <arg name="rtabmapviz" value="false"/>
         <arg name="rviz" value="false"/>
-        <arg name="cell_size" value="0.02" />
+        <arg name="cell_size" value="$(arg voxel_size)" />
     </include>
 
+    <!-- meshing -->
     <node name="triangulate" pkg="reconstruct" type="reconstruct_triangulate" />
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find reconstruct)/config/scan_map.rviz" />
+    <!-- rviz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find reconstruct)/config/scan_map.rviz" if="$(arg use_rviz)"/>
 
 </launch>

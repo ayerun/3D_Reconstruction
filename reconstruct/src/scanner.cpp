@@ -1,5 +1,5 @@
 /// \file
-/// \brief 
+/// \brief Creates point cloud map using ICP.
 ///
 /// PARAMETERS:
 ///     
@@ -75,8 +75,8 @@ void pcCallback(const sensor_msgs::PointCloud2 PCnew)
         icp.align(cloud_fused);
         Tcb = icp.getFinalTransformation();
 
+        //calculate transform
         Tca = Tcb*Tba;
-
 
         //Transform Point Cloud
         pcl_ros::transformPointCloud(Tca, PCnew, PCtrans);
@@ -89,6 +89,7 @@ void pcCallback(const sensor_msgs::PointCloud2 PCnew)
         //publish pointcloud
         pc_pub.publish(PCfused);
 
+        //iterate
         PCold = PCnew;
         Tba = Tca;
     }
@@ -113,11 +114,13 @@ int main(int argc, char** argv)
     icp.setTransformationEpsilon(1e-8);
     icp.setEuclideanFitnessEpsilon(1);
 
+    //intialize matricies
     Tba = Eigen::Matrix4f::Identity();
     Tcb = Eigen::Matrix4f::Identity();
     transform = Eigen::Matrix4f::Identity();
     Tca = Eigen::Matrix4f::Identity();
 
+    //spin
     while(ros::ok())
     {
         ros::spinOnce();

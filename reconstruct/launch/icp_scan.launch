@@ -1,7 +1,16 @@
 <launch>
 
-    <!-- launch realsense -->
-    <include file="$(find camera_input)/launch/viewer.launch" />
+    <arg name="use_rviz" default="true" doc="launches rviz"/>
+    <arg name="clip" default="2" doc="clipping distance for realsense [m]" />
+
+    <!-- launch camera -->
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="filters" value="pointcloud"/>
+        <arg name="clip_distance" value="$(arg clip)" />
+    </include>
+
+    <!-- launch rviz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find reconstruct)/config/pointcloud_view.rviz" if="$(arg use_rviz)"/>
 
     <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
     <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
@@ -17,6 +26,6 @@
     </node>
 
     <!-- iterative closest point -->
-    <node name="scanner" pkg="reconstruct" type="reconstruct_scanner" output="screen"/>
+    <node name="scanner" pkg="reconstruct" type="reconstruct_scanner"/>
 
 </launch>

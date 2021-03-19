@@ -54,7 +54,7 @@
   <build_depend>roscpp</build_depend>
   <build_export_depend>pcl_ros</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
-  <exec_depend>camera_input</exec_depend>
+  <exec_depend>image_transport</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>nodelet</exec_depend>
   <exec_depend>pcl_ros</exec_depend>
