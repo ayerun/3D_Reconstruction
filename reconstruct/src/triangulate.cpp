@@ -2,7 +2,18 @@
 /// \brief Provides services to create .stl meshes or a .ply point cloud
 ///
 /// PARAMETERS:
-///     
+///     SearchRadius: Greedy Projection Triangulation search radius
+///     Mu: Greedy Projection Triangulation Mu
+///     MaximumNearestNeighbors: Greedy Projection Triangulation Maximum Nearest Neighbors
+///     MaximumSurfaceAngle: Greedy Projection Triangulation Maximum Surface Angle
+///     MaximumAngle: Greedy Projection Triangulation Maximum Angle
+///     MinimumAngle: Greedy Projection Triangulation
+///     Iso_Level: Marching Cubes iso level
+///     GR_x: Marching Cubes grid resolution x
+///     GR_y: Marching Cubes grid resolution y
+///     GR_z: Marching Cubes grid resolution z
+///     PolynomialOrder: Moving Least Squares order of polynomial
+///     mls_SearchRadius: Moving Least Squares search radius
 /// PUBLISHES:
 ///     
 /// SUBSCRIBES:
@@ -28,6 +39,24 @@
 //global variables
 static sensor_msgs::PointCloud2Ptr scan;
 static const int frequency = 200;
+
+//Greedy Project Triangulation parameters
+static double SearchRadius;
+static double Mu;
+static int MaximumNearestNeighbors;
+static double MaximumSurfaceAngle;
+static double MaximumAngle;
+static double MinimumAngle;
+
+//Marching Cubes parameters
+static double Iso_Level;
+static double GR_x;
+static double GR_y;
+static double GR_z;
+
+//Moving Least Squares parameters
+static int PolynomialOrder;
+static double mls_SearchRadius;
 
 /// \brief subscriber callback stores address of latest cloud map
 /// \param PCmsg - incoming cloud map
@@ -58,9 +87,9 @@ bool gp_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create
     pcl::MovingLeastSquares<pcl::PointXYZ,pcl::PointNormal> mls;
     mls.setComputeNormals(true);
     mls.setInputCloud(cloud);
-    mls.setPolynomialOrder(2);
+    mls.setPolynomialOrder(PolynomialOrder);
     mls.setSearchMethod(tree);
-    mls.setSearchRadius(0.05);
+    mls.setSearchRadius(mls_SearchRadius);
     mls.process(*cloud_with_normals);
     
     //Create search tree
@@ -72,12 +101,12 @@ bool gp_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create
     pcl::PolygonMesh triangles;
 
     //Set triangulation parameters
-    gp3.setSearchRadius(0.1); //maximum distance between connected points (max edge length)
-    gp3.setMu(2.5);
-    gp3.setMaximumNearestNeighbors(100);
-    gp3.setMaximumSurfaceAngle(M_PI/4);
-    gp3.setMaximumAngle(2*M_PI/3);
-    gp3.setMinimumAngle(M_PI/18);
+    gp3.setSearchRadius(SearchRadius); //maximum distance between connected points (max edge length)
+    gp3.setMu(Mu);
+    gp3.setMaximumNearestNeighbors(MaximumNearestNeighbors);
+    gp3.setMaximumSurfaceAngle(MaximumSurfaceAngle);
+    gp3.setMaximumAngle(MaximumAngle);
+    gp3.setMinimumAngle(MinimumAngle);
     gp3.setNormalConsistency(false);
 
     //Create mesh
@@ -113,9 +142,9 @@ bool mc_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create
     pcl::MovingLeastSquares<pcl::PointXYZ,pcl::PointNormal> mls;
     mls.setComputeNormals(true);
     mls.setInputCloud(cloud);
-    mls.setPolynomialOrder(2);
+    mls.setPolynomialOrder(PolynomialOrder);
     mls.setSearchMethod(tree);
-    mls.setSearchRadius(0.05);
+    mls.setSearchRadius(mls_SearchRadius);
     mls.process(*cloud_with_normals);
     
     //Create search tree
@@ -129,8 +158,8 @@ bool mc_meshCallback(reconstruct::create_mesh::Request &req, reconstruct::create
     //Create mesh
     mc.setInputCloud(cloud_with_normals);
     mc.setSearchMethod(tree2);
-    mc.setIsoLevel(0.5);
-    mc.setGridResolution(32,32,32);
+    mc.setIsoLevel(Iso_Level);
+    mc.setGridResolution(GR_x,GR_y,GR_z);
     mc.reconstruct(triangles);
 
     // export as stl
@@ -161,9 +190,9 @@ bool plyCallback(reconstruct::create_mesh::Request &req, reconstruct::create_mes
     pcl::MovingLeastSquares<pcl::PointXYZ,pcl::PointNormal> mls;
     mls.setComputeNormals(true);
     mls.setInputCloud(cloud);
-    mls.setPolynomialOrder(2);
+    mls.setPolynomialOrder(PolynomialOrder);
     mls.setSearchMethod(tree);
-    mls.setSearchRadius(0.05);
+    mls.setSearchRadius(mls_SearchRadius);
     mls.process(*cloud_with_normals);
 
     //save normal cloud
@@ -187,6 +216,24 @@ int main(int argc, char** argv)
     const ros::ServiceServer gp_mesh_service = nh.advertiseService("create_gp_mesh",gp_meshCallback);
     const ros::ServiceServer mc_mesh_service = nh.advertiseService("create_mc_mesh",mc_meshCallback);
     const ros::ServiceServer ply_service = nh.advertiseService("create_ply",plyCallback);
+
+    //get parameters
+    //greedy projection triangulation
+    ros::param::get("/SearchRadius", SearchRadius);
+    ros::param::get("/Mu", Mu);
+    ros::param::get("/MaximumNearestNeighbors", MaximumNearestNeighbors);
+    ros::param::get("/MaximumSurfaceAngle", MaximumSurfaceAngle);
+    ros::param::get("/MaximumAngle", MaximumAngle);
+    ros::param::get("/MinimumAngle", MinimumAngle);
+    //marching cubes
+    ros::param::get("/Iso_Level", Iso_Level);
+    ros::param::get("/GR_x", GR_x);
+    ros::param::get("/GR_y", GR_y);
+    ros::param::get("/GR_z", GR_z);
+    //moving least squares
+    ros::param::get("/PolynomialOrder", PolynomialOrder);
+    ros::param::get("/mls_SearchRadius", mls_SearchRadius);
+
 
     //spin
     ros::Rate r(frequency);

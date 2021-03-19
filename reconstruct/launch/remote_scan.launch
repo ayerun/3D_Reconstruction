@@ -19,6 +19,9 @@
 
     <!-- meshing -->
     <node name="triangulate" pkg="reconstruct" type="reconstruct_triangulate" />
+    <rosparam file="$(find reconstruct)/config/gp_params.yaml"/>
+    <rosparam file="$(find reconstruct)/config/mc_params.yaml"/>
+    <rosparam file="$(find reconstruct)/config/mls_params.yaml"/>
 
     <!-- rviz -->
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find reconstruct)/config/scan_map.rviz" />

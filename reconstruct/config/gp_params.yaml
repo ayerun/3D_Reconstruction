@@ -1,0 +1,6 @@
+SearchRadius: 0.1
+Mu: 2.5
+MaximumNearestNeighbors: 100
+MaximumSurfaceAngle: 0.78539816339  # pi/4
+MaximumAngle: 2.09439510239         # 2*pi/3
+MinimumAngle: 0.17453292519         # pi/18
