@@ -2,14 +2,28 @@
     <arg name="use_rviz" default="true" doc="launch rviz"/>
     <arg name="voxel_size" default="0.02" doc="point cloud map voxel size [m]"/>
     <arg name="clip" default="2" doc="clipping distance for realsense [m]" />
+    <arg name="robot" default="scanner.local" doc="robot address" />
+    <arg name="remote" default="false" doc="launch remote nodes" />
+    <arg name="username" default="arun" doc="username for remote machine" />
 
     <!-- launch realsense -->
-    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch" unless="$(arg remote)">
         <arg name="align_depth" value="true"/>
         <arg name="linear_accel_cov" value="1.0"/>
         <arg name="unite_imu_method" value="linear_interpolation"/>
         <arg name="clip_distance" value="$(arg clip)" />
     </include>
+
+    <!-- remote nodes -->
+    <group if="$(arg remote)" >
+        <machine name="jetson" user="$(arg username)" address="$(arg robot)" env-loader="/home/arun/ws/devel/env.sh" default="true" />
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+            <arg name="align_depth" value="true"/>
+            <arg name="linear_accel_cov" value="1.0"/>
+            <arg name="unite_imu_method" value="linear_interpolation"/>
+            <arg name="clip_distance" value="$(arg clip)" />
+        </include>
+    </group>
     
     <!-- visual slam -->
     <include file="$(find reconstruct)/launch/rtabmap.launch">
